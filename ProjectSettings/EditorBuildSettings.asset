@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/GalaxiaStartNetwork_Pre.unity
+    guid: 7d0d2b0cadd389b4186482c839bb1139
+  - enabled: 1
     path: Assets/Scenes/GalaxiaStartNetwork.unity
     guid: 12017bd0cb36d4c439eedd02ff240ec3
   - enabled: 1

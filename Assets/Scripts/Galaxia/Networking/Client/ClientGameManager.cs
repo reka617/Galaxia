@@ -53,6 +53,21 @@ public class ClientGameManager : MonoBehaviour
         UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         RelayServerData relayServerData = new RelayServerData(clientallocation, "dtls");
         transport.SetRelayServerData(relayServerData);
+
+        #region SettingConnectionData
+
+        UserData userData = new UserData
+        {
+            userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name")
+        };
+
+        string payload = JsonUtility.ToJson(userData);
+        byte[] payloadBytes = System.Text.Encoding.UTF8.GetBytes(payload);
+        
+        //네트워크매니저의 커넥션 데이터에 페이로드 설정
+        NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
+
+        #endregion
         
         //네트워크 매니저 클라이언트 시작
         NetworkManager.Singleton.StartClient();

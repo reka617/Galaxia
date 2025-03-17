@@ -21,6 +21,8 @@ public class HostGameManager : MonoBehaviour
     private const string GameSceneName = "GalaxiaPlay";
 
     private string lobbyID;
+
+    private NetworkServer networkServer;
     
     // public async Task InitAsync()
     // {
@@ -89,6 +91,8 @@ public class HostGameManager : MonoBehaviour
         //트랜스포트에 RelayServerData 설정
         transport.SetRelayServerData(relayServerData);
         //위의 3문구를 통해 어디가 최적으로 릴레이시킬 수 있는지 설정한 것
+
+        networkServer = new NetworkServer(NetworkManager.Singleton); // 서버 생성
         
         //네트워크 매니저 호스트 시작
         NetworkManager.Singleton.StartHost();
