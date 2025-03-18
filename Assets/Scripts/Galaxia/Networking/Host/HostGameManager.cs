@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport.Relay;
+using Unity.Services.Authentication;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
@@ -13,7 +15,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 
-public class HostGameManager : MonoBehaviour
+public class HostGameManager : IDisposable
 {
     private Allocation allocation; // 호스트 할당 정보
     private string joinCode; //릴레이는 최적의 조인을 위한 코드정보를 받아옴
@@ -67,9 +69,11 @@ public class HostGameManager : MonoBehaviour
                         value: joinCode)
                 }
             };
+
+            string playerName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Unknown");
             
             //로비 생성 딜레이 대비
-            Lobby lobby = await Lobbies.Instance.CreateLobbyAsync("Game Lobby", maxConnection, options);
+            Lobby lobby = await Lobbies.Instance.CreateLobbyAsync($"{playerName}(Lobby)", maxConnection, options);
 
             lobbyID = lobby.Id;
             
@@ -93,10 +97,24 @@ public class HostGameManager : MonoBehaviour
         //위의 3문구를 통해 어디가 최적으로 릴레이시킬 수 있는지 설정한 것
 
         networkServer = new NetworkServer(NetworkManager.Singleton); // 서버 생성
+
+        #region SettingConnectionData
+
+        UserData userData = new UserData
+        {
+            userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name"),
+            userAuthId = AuthenticationService.Instance.PlayerId
+        };
+
+        string payload = JsonUtility.ToJson(userData);
+        byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+
+        NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
+        
+        #endregion
         
         //네트워크 매니저 호스트 시작
         NetworkManager.Singleton.StartHost();
-        
         //게임 씬 로드
         NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, LoadSceneMode.Single);
     }
@@ -111,5 +129,24 @@ public class HostGameManager : MonoBehaviour
             Lobbies.Instance.SendHeartbeatPingAsync(lobbyID);
             yield return wait;
         }
+    }
+
+    public async void Dispose()
+    {
+        HostSingleton.Instance.StopCoroutine(nameof(ReadyLobby));
+
+        if (!string.IsNullOrEmpty(lobbyID))
+        {
+            try
+            {
+                await Lobbies.Instance.DeleteLobbyAsync(lobbyID);
+            }
+            catch (LobbyServiceException e)
+            {
+                Debug.LogError(e);
+            }
+        }
+        
+        networkServer?.Dispose();
     }
 }

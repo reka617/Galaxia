@@ -10,18 +10,22 @@ using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class ClientGameManager : MonoBehaviour
+public class ClientGameManager : IDisposable
 {
     //클라이언트는 joinAllocation 객체를 사용
     private JoinAllocation clientallocation;
     
     private const string MenuSceneName = "GalaxiaStart";
+
+    private NetworkClient networkClient;
     public async Task<bool> InitAsync()
     {
         //플레이어 인증처리
         
         //UnityServices.InitializeAsync()를 호출 -> UGS 초기화
         await UnityServices.InitializeAsync();
+
+        networkClient = new NetworkClient(NetworkManager.Singleton);
 
         AuthState authState = await AuthenticateWrapper.DoAuth();
         if (authState == AuthState.Authenticated)
@@ -58,7 +62,9 @@ public class ClientGameManager : MonoBehaviour
 
         UserData userData = new UserData
         {
-            userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name")
+            userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name"),
+            //AuthenticationService 인스턴스의 PlayerId를 가져옴
+            userAuthId = AuthenticationService.Instance.PlayerId
         };
 
         string payload = JsonUtility.ToJson(userData);
@@ -71,5 +77,10 @@ public class ClientGameManager : MonoBehaviour
         
         //네트워크 매니저 클라이언트 시작
         NetworkManager.Singleton.StartClient();
+    }
+
+    public void Dispose()
+    {
+        networkClient?.Dispose();
     }
 }
