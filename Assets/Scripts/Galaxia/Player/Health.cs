@@ -8,6 +8,7 @@ public class Health : NetworkBehaviour
 {
    [field: SerializeField] public int MaxHealth { get; private set; } = 100; //최대체력 저장변수
 
+   //NetworkVariable은 네트워크를 통해 변수를 동기화 
    public NetworkVariable<int> CurrentHealth = new NetworkVariable<int>();
 
    private bool isDead;

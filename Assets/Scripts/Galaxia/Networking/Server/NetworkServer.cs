@@ -31,6 +31,11 @@ public class NetworkServer : IDisposable
       authIdToUserData[userData.userAuthId] = userData; // 인증 ID와 클라이언트 ID 매핑
       
       response.Approved = true; // 연결 승인
+
+      //스폰 위치 설정
+      response.Position = SpawnPoint.GetRandomSpawnPos();
+      response.Rotation = Quaternion.identity;
+      
       response.CreatePlayerObject = true; // 플레이어 오브젝트 생성, 이부분이 빠질경우 정상적으로 게임씬으로 가더라도 플레이어를 확인 못할수도있음
    }
    
