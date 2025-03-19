@@ -24,7 +24,8 @@ public class HostGameManager : IDisposable
 
     private string lobbyID;
 
-    private NetworkServer networkServer;
+    //private NetworkServer networkServer;
+    public NetworkServer NetworkServer { get; private set; }
     
     // public async Task InitAsync()
     // {
@@ -96,7 +97,7 @@ public class HostGameManager : IDisposable
         transport.SetRelayServerData(relayServerData);
         //위의 3문구를 통해 어디가 최적으로 릴레이시킬 수 있는지 설정한 것
 
-        networkServer = new NetworkServer(NetworkManager.Singleton); // 서버 생성
+        NetworkServer = new NetworkServer(NetworkManager.Singleton); // 서버 생성
 
         #region SettingConnectionData
 
@@ -147,6 +148,6 @@ public class HostGameManager : IDisposable
             }
         }
         
-        networkServer?.Dispose();
+        NetworkServer?.Dispose();
     }
 }
