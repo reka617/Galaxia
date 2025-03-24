@@ -1,8 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.XR;
 
 public class RespawnHandler : NetworkBehaviour
 {
@@ -12,7 +10,9 @@ public class RespawnHandler : NetworkBehaviour
    {
       if (!IsServer) return;
 
-      AirPlayer[] players = FindObjectsOfType<AirPlayer>();
+      //AirPlayer[] players = FindObjectsOfType<AirPlayer>();
+
+      AirPlayer[] players = FindObjectsByType<AirPlayer>(FindObjectsSortMode.None);
       foreach (AirPlayer player in players)
       {
          HandlePlayerSpawned(player);
