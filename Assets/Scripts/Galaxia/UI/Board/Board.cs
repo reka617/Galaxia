@@ -12,6 +12,8 @@ public class Board : NetworkBehaviour
     
     //Entity 데이터 저장
     private List<BoardEntityDisplay> boardEntityDisplays = new List<BoardEntityDisplay>();
+
+    private int entitiesCount = 8;
     private void Awake()
     {
         boardEntities = new NetworkList<BoardEntityState>();
@@ -25,6 +27,26 @@ public class Board : NetworkBehaviour
             PlayerName = player.PlayerName.Value,
             Golds = 0
         });
+        
+        //갱신된 골드를 얻기 위해 Hook
+        player.Wallet.golds.OnValueChanged += (_, newGolds) => HandleGoldsChanged(player.OwnerClientId, newGolds);
+    }
+
+    private void HandleGoldsChanged(ulong clientId, int newGolds)
+    {
+        for (int i = 0; i < boardEntities.Count; i++)
+        {
+            if (boardEntities[i].ClientId != clientId) continue;
+
+            boardEntities[i] = new BoardEntityState
+            {
+                ClientId = boardEntities[i].ClientId,
+                PlayerName = boardEntities[i].PlayerName,
+                Golds = newGolds
+            };
+
+            return;
+        }
     }
 
     private void HandlePlayerDespawned(AirPlayer player)
@@ -38,6 +60,8 @@ public class Board : NetworkBehaviour
             boardEntities.Remove(entity);
             break;
         }
+        
+        player.Wallet.golds.OnValueChanged -= (_, newGolds) => HandleGoldsChanged(player.OwnerClientId, newGolds);
     }
 
     public override void OnNetworkSpawn()
@@ -115,6 +139,27 @@ public class Board : NetworkBehaviour
                     entityUpdate.UpdateGolds(changeEvent.Value.Golds);
                 }
                 break;
+        }
+        //x,y의 값을 정렬
+        boardEntityDisplays.Sort((x,y) => y.Golds.CompareTo(x.Golds));
+
+        for (int i = 0; i < boardEntityDisplays.Count; i++)
+        {
+            boardEntityDisplays[i].transform.SetSiblingIndex(i);
+            boardEntityDisplays[i].UpdateText();
+            boardEntityDisplays[i].gameObject.SetActive(i <= entitiesCount -1);
+        }
+
+        BoardEntityDisplay display =
+            boardEntityDisplays.FirstOrDefault(x => x.ClientId == NetworkManager.Singleton.LocalClientId);
+
+        if (display != null)
+        {
+            if (display.transform.GetSiblingIndex () >= entitiesCount)
+            {
+                boardEntityHolder.GetChild(entitiesCount-1).gameObject.SetActive(false);
+                display.gameObject.SetActive(true);
+            }
         }
     }
 }

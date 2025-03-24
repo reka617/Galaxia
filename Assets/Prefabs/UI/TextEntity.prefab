@@ -148,3 +148,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayText: {fileID: 7720238438321680477}
+  myRankColor: {r: 0.97140074, g: 0.9716981, b: 0, a: 1}

@@ -14,6 +14,7 @@ public class AirPlayer : NetworkBehaviour
     public static event Action<AirPlayer> OnPlayerSpawned;
     public static event Action<AirPlayer> OnPlayerDespawned; 
     [field: SerializeField] public Health Health { get; private set; }
+    [field: SerializeField] public ItemWallet Wallet { get; private set; }
     public override void OnNetworkSpawn()
     {
         if (IsServer)
