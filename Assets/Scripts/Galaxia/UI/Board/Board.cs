@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -41,7 +42,7 @@ public class Board : NetworkBehaviour
             boardEntities[i] = new BoardEntityState
             {
                 ClientId = boardEntities[i].ClientId,
-                PlayerName = boardEntities[i].PlayerName,
+                PlayerName = boardEntities[i].PlayerName.Value,
                 Golds = newGolds
             };
 
@@ -56,7 +57,6 @@ public class Board : NetworkBehaviour
         foreach (BoardEntityState entity in boardEntities)
         {
             if(entity.ClientId != player.OwnerClientId) continue;
-
             boardEntities.Remove(entity);
             break;
         }
@@ -82,12 +82,12 @@ public class Board : NetworkBehaviour
         {
             boardEntities.OnListChanged += HandleBoardEntitiesChanged;
 
-            foreach (BoardEntityState entitiy in boardEntities)
+            foreach (BoardEntityState entity in boardEntities)
             {
                 HandleBoardEntitiesChanged(new NetworkListEvent<BoardEntityState>
                 {
                     Type = NetworkListEvent<BoardEntityState>.EventType.Add,
-                    Value = entitiy
+                    Value = entity
                 });
             }
         }
@@ -140,7 +140,7 @@ public class Board : NetworkBehaviour
                 }
                 break;
         }
-        //x,y의 값을 정렬
+        //x,y의 값을 정렬(게임쪽으론 보유숫자순으로 정렬)
         boardEntityDisplays.Sort((x,y) => y.Golds.CompareTo(x.Golds));
 
         for (int i = 0; i < boardEntityDisplays.Count; i++)
@@ -155,7 +155,7 @@ public class Board : NetworkBehaviour
 
         if (display != null)
         {
-            if (display.transform.GetSiblingIndex () >= entitiesCount)
+            if (display.transform.GetSiblingIndex() >= entitiesCount)
             {
                 boardEntityHolder.GetChild(entitiesCount-1).gameObject.SetActive(false);
                 display.gameObject.SetActive(true);

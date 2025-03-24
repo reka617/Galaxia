@@ -1,10 +1,12 @@
 using System.Collections;
+using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 
 public class RespawnHandler : NetworkBehaviour
 {
-   [SerializeField] private NetworkObject playerPrefab;
+   [SerializeField] private AirPlayer playerPrefab;
+   [SerializeField] private float keepGoldPercentage;
 
    public override void OnNetworkSpawn()
    {
@@ -44,17 +46,35 @@ public class RespawnHandler : NetworkBehaviour
 
    private void HandlePlayerDie(AirPlayer player)
    {
+      int keepGolds = (int)(player.Wallet.golds.Value * (keepGoldPercentage / 100));
+      ulong clientId = player.OwnerClientId;
+      
+      // //플레이어 파괴 전에 매핑 정보 캐시
+      // if (HostSingleton.Instance?.HostGameManager?.NetworkServer != null)
+      // {
+      //    HostSingleton.Instance.HostGameManager.NetworkServer.CacheClientAuth(clientId);
+      // }
+      
       Destroy(player.gameObject);
 
-      StartCoroutine(RespawnPlayer(player.OwnerClientId));
+      //StartCoroutine(RespawnPlayer(player.OwnerClientId));
+      StartCoroutine(RespawnPlayer(player.OwnerClientId, keepGolds));
    }
 
-   private IEnumerator RespawnPlayer(ulong ownerClientId)
+   private IEnumerator RespawnPlayer(ulong ownerClientId, int keepGolds)
    {
       yield return null; // 다음 프레임까지 대기
-
-      NetworkObject playerInstance = Instantiate(playerPrefab, SpawnPoint.GetRandomSpawnPos(), Quaternion.identity);
+   
+      // //매핑 정보 복원
+      // if (HostSingleton.Instance?.HostGameManager?.NetworkServer != null)
+      // {
+      //    HostSingleton.Instance.HostGameManager.NetworkServer.RestoreClientAuth(ownerClientId);
+      // }
+      //NetworkObject playerInstance = Instantiate(playerPrefab, SpawnPoint.GetRandomSpawnPos(), Quaternion.identity);
+      AirPlayer playerInstance = Instantiate(playerPrefab, SpawnPoint.GetRandomSpawnPos(), quaternion.identity);
       
-      playerInstance.SpawnAsPlayerObject(ownerClientId);
+      playerInstance.NetworkObject.SpawnAsPlayerObject(ownerClientId);
+      playerInstance.Wallet.golds.Value += keepGolds;
    }
+   
 }

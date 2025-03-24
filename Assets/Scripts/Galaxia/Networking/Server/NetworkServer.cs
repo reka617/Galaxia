@@ -10,6 +10,9 @@ public class NetworkServer : IDisposable
    //클라이언트 ID와 인증 ID 매핑
    private Dictionary<ulong, string> clientToAuth = new Dictionary<ulong, string>();
    private Dictionary<string, UserData> authIdToUserData = new Dictionary<string, UserData>();
+   
+   //ID정보 캐싱
+   private Dictionary<ulong, string> clientAuthCache = new Dictionary<ulong, string>();
 
    public NetworkServer (NetworkManager networkManager)
    {
@@ -41,7 +44,7 @@ public class NetworkServer : IDisposable
    
    private void OnNetworkReady()
    {
-      networkManager.OnClientConnectedCallback += OnClientDisconnect;
+      networkManager.OnClientDisconnectCallback += OnClientDisconnect;
    }
 
    private void OnClientDisconnect(ulong clientId)
@@ -64,9 +67,10 @@ public class NetworkServer : IDisposable
          }
          return null;
       }
-
+   
       return null;
    }
+   
 
    public void Dispose()
    {
@@ -82,4 +86,29 @@ public class NetworkServer : IDisposable
          networkManager.Shutdown();
       }
    }
+   
+   // //클라이언트 ID 캐싱
+   // //매핑 정보를 캐시에 저장함
+   // public void CacheClientAuth(ulong clientId)
+   // {
+   //    if (clientToAuth.TryGetValue(clientId, out string authId))
+   //    {
+   //       clientAuthCache[clientId] = authId;
+   //       Debug.Log($"Cached auth mapping: clientId {clientId} -> authId {authId}");
+   //    }
+   // }
+   //
+   // // 캐시에서 매핑 정보를 복원하는 메서드
+   // public void RestoreClientAuth(ulong clientId)
+   // {
+   //    if (clientAuthCache.TryGetValue(clientId, out string authId))
+   //    {
+   //       // 기존 매핑이 없는 경우에만 복원
+   //       if (!clientToAuth.ContainsKey(clientId))
+   //       {
+   //          clientToAuth[clientId] = authId;
+   //          Debug.Log($"Restored auth mapping: clientId {clientId} -> authId {authId}");
+   //       }
+   //    }
+   // }
 }
