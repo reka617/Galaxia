@@ -14,30 +14,24 @@ using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
 public class HostGameManager : IDisposable
 {
-    private Allocation allocation; // í˜¸ìŠ¤íŠ¸ í• ë‹¹ ì •ë³´
-    private string joinCode; //ë¦´ë ˆì´ëŠ” ìµœì ì˜ ì¡°ì¸ì„ ìœ„í•œ ì½”ë“œì •ë³´ë¥¼ ë°›ì•„ì˜´
-    private const int maxConnection = 20; // ìµœëŒ€ ì—°ê²°ìˆ˜
-    private const string GameSceneName = "GalaxiaPlay";
+
+    private Allocation allocation; //È£½ºÆ® ÇÒ´ç Á¤º¸
+    private string joinCode;
+    private const int maxConnection = 20;//ÃÖ´ë ¿¬°á ¼ö
+    private const string GameSceneName = "Play";
 
     private string lobbyID;
 
-    //private NetworkServer networkServer;
-    public NetworkServer NetworkServer { get; private set; }
-    
-    // public async Task InitAsync()
-    // {
-    //     //í”Œë ˆì´ì–´ ì¸ì¦ì²˜ë¦¬
-    // }
+    //public NetworkServer networkServer;  //  
+    public NetworkServer NetworkServer { get; private set; } //  
 
     public async Task StartHostAsync()
     {
         try
         {
-            //ìµœëŒ€ ì—°ê²°ìˆ˜ ë§Œí¼ ë“¤ì–´ê°ˆ ìˆ˜ ìˆëŠ” ë°©ì„ ë§Œë“ ë‹¤
-            allocation = await Relay.Instance.CreateAllocationAsync(maxConnection); 
+            allocation =  await Relay.Instance.CreateAllocationAsync(maxConnection);
         }
         catch (Exception e)
         {
@@ -46,7 +40,7 @@ public class HostGameManager : IDisposable
 
         try
         {
-            //í• ë‹¹ë°›ì€ ë°©ì— ëŒ€í•œ ì ‘ê·¼í•˜ê¸° ìœ„í•œ ì½”ë“œë¥¼ ë°›ì•„ì˜´
+            //for client..
             joinCode = await Relay.Instance.GetJoinCodeAsync(allocation.AllocationId);
             Debug.Log("Join Code : " + joinCode);
         }
@@ -54,89 +48,97 @@ public class HostGameManager : IDisposable
         {
             Debug.LogError(e);
         }
-        //ë„¤íŠ¸ì›Œí¬ ë§¤ë‹ˆì €ì˜ íŠ¸ëœìŠ¤í¬íŠ¸ë¥¼ ê°€ì ¸ì˜´
+
+        //³×Æ®¿öÅ© ¸Å´ÏÀúÀÇ Æ®·£½ºÆ÷Æ®¸¦ °¡Á®¿È  
         UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        
-        //ë¡œë¹„ìƒì„±
+
+        //RelayServerData »ı¼º
+        //RelayServerData relayServerData = new RelayServerData(allocation, "udp");
+        RelayServerData relayServerData = new RelayServerData(allocation, "dtls"); //for security
+
+        //Æ®·£½ºÆ÷Æ®¿¡ RelayServerData ¼³Á¤
+        transport.SetRelayServerData(relayServerData);
+
+
+        //·Îºñ »ı¼º
         try
         {
-            CreateLobbyOptions options = new CreateLobbyOptions();
-            options.IsPrivate = false; // ë¡œë¹„ì˜ ê³µê°œì—¬ë¶€ ì„¤ì •
-            options.Data = new Dictionary<string, DataObject>()
+            CreateLobbyOptions options = new CreateLobbyOptions(); //·Îºñ ¿É¼Ç »ı¼º
+            options.IsPrivate = false; //°ø°³ ·Îºñ
+            options.Data = new Dictionary<string, DataObject>() //µ¥ÀÌÅÍ ¼³Á¤
             {
-                {
+                { 
                     "JoinCode", new DataObject(
                         visibility: DataObject.VisibilityOptions.Member,
-                        value: joinCode)
+                        value: joinCode
+                    )
+
                 }
             };
 
             string playerName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Unknown");
-            
-            //ë¡œë¹„ ìƒì„± ë”œë ˆì´ ëŒ€ë¹„
+
+            // ·Îºñ»ı¼º ½Ã°£ÀÌ ±æ¾îÁú °æ¿ì ´ëºñ 
+            //Lobby lobby = await Lobbies.Instance.CreateLobbyAsync("Game Lobby", maxConnection, options); 
             Lobby lobby = await Lobbies.Instance.CreateLobbyAsync($"{playerName}(Lobby)", maxConnection, options);
 
             lobbyID = lobby.Id;
-            
-            //15ì´ˆ ëŒ€ê¸°ë¡œ í•˜íŠ¸ë¹„íŠ¸ ë©”ì„¸ì§€ ì „ì†¡
+            //15ÃÊ ´ë±â·Î ÇÏÆ®ºñÆ® ¸Ş½ÃÁö Àü¼Û    
             HostSingleton.Instance.StartCoroutine(ReadyLobby(15));
-
         }
-        catch (LobbyServiceException e)
+        catch(LobbyServiceException e)
         {
             Debug.Log(e);
             return;
         }
-        
-        //RelayServerData ìƒì„±
-        //RelayServerData relayServerData = new RelayServerData(allocation, "udp");
-        //ë³´ì•ˆì„ ìœ„í•´ì„œ dtls ì‚¬ìš©
-        RelayServerData relayServerData = new RelayServerData(allocation, "dtls"); 
-        
-        //íŠ¸ëœìŠ¤í¬íŠ¸ì— RelayServerData ì„¤ì •
-        transport.SetRelayServerData(relayServerData);
-        //ìœ„ì˜ 3ë¬¸êµ¬ë¥¼ í†µí•´ ì–´ë””ê°€ ìµœì ìœ¼ë¡œ ë¦´ë ˆì´ì‹œí‚¬ ìˆ˜ ìˆëŠ”ì§€ ì„¤ì •í•œ ê²ƒ
 
-        NetworkServer = new NetworkServer(NetworkManager.Singleton); // ì„œë²„ ìƒì„±
 
-        #region SettingConnectionData
+        NetworkServer  = new NetworkServer(NetworkManager.Singleton); //¼­¹ö »ı¼º
 
+        //************¿¬°á µ¥ÀÌÅÍ ¼³Á¤************
         UserData userData = new UserData
         {
             userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name"),
+            
             userAuthId = AuthenticationService.Instance.PlayerId
+
         };
 
         string payload = JsonUtility.ToJson(userData);
         byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
 
+        //³×Æ®¿÷ ¸Å´ÏÁ®ÀÇ Ä¿³Ø¼Ç µ¥ÀÌÅÍ¿¡ ÆäÀÌ·Îµå ¼³Á¤
         NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
-        
-        #endregion
-        
-        //ë„¤íŠ¸ì›Œí¬ ë§¤ë‹ˆì € í˜¸ìŠ¤íŠ¸ ì‹œì‘
+        //************¿¬°á µ¥ÀÌÅÍ ¼³Á¤************
+
+
+        //³×Æ®¿÷ ¸Ş´ÏÁ® È£½ºÆ® ½ÃÀÛ  
         NetworkManager.Singleton.StartHost();
-        //ê²Œì„ ì”¬ ë¡œë“œ
-        NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, LoadSceneMode.Single);
+
+        //°ÔÀÓ ¾À ·Îµå
+        NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, LoadSceneMode.Single); 
     }
 
-    private IEnumerator ReadyLobby(float waitTime) //ë¡œë¹„ê°€ ì œëŒ€ë¡œ ìƒì„±ë¬ëŠ”ì§€ í™•ì¸
+    private IEnumerator ReadyLobby(float waitTime)
     {
-        Debug.Log("Ready Lobby : " + lobbyID);
+        //·Îºñ¿¡ ´ëÇÑ Heartbeat ¸Ş½ÃÁö Àü¼Û
         WaitForSecondsRealtime wait = new WaitForSecondsRealtime(waitTime);
 
         while (true)
         {
             Lobbies.Instance.SendHeartbeatPingAsync(lobbyID);
             yield return wait;
+
         }
+              
+       
     }
 
     public async void Dispose()
     {
         HostSingleton.Instance.StopCoroutine(nameof(ReadyLobby));
 
-        if (!string.IsNullOrEmpty(lobbyID))
+        if(!string.IsNullOrEmpty(lobbyID))
         {
             try
             {
@@ -144,10 +146,12 @@ public class HostGameManager : IDisposable
             }
             catch (LobbyServiceException e)
             {
-                Debug.LogError(e);
+                Debug.Log(e);
             }
+
+            lobbyID = string.Empty;
         }
-        
+
         NetworkServer?.Dispose();
     }
 }

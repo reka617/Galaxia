@@ -1,114 +1,105 @@
 using System;
+using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
-using UnityEngine;
+using Unity.Netcode.Transports.UTP;
+
 
 public class NetworkServer : IDisposable
 {
-   private NetworkManager networkManager;
-   
-   //클라이언트 ID와 인증 ID 매핑
-   private Dictionary<ulong, string> clientToAuth = new Dictionary<ulong, string>();
-   private Dictionary<string, UserData> authIdToUserData = new Dictionary<string, UserData>();
-   
-   //ID정보 캐싱
-   private Dictionary<ulong, string> clientAuthCache = new Dictionary<ulong, string>();
+    
+    private NetworkManager networkManager;
 
-   public NetworkServer (NetworkManager networkManager)
-   {
-      this.networkManager = networkManager;
-      // 연결 승인 콜백 등록
-      networkManager.ConnectionApprovalCallback += ApprovalCheck;
+    // Ŭ���̾�Ʈ ID�� ���� ID ����
+    private Dictionary<ulong, string> clientIdToAuth = new Dictionary<ulong, string>(); 
+    private Dictionary<string, UserData> authIdToUserData = new Dictionary<string, UserData>(); 
 
-      networkManager.OnServerStarted += OnNetworkReady;
-   }
-   
-   private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
-   {
-      string payload = System.Text.Encoding.UTF8.GetString(request.Payload); // 요청 데이터를 문자열로 변환
-      UserData userData = JsonUtility.FromJson<UserData>(payload); // 요청 데이터를 UserData객체로 변환
-      
-      Debug.Log("ApprovalCheck: " + userData.userName);
 
-      clientToAuth[request.ClientNetworkId] = userData.userAuthId; // 클라이언트 ID와 인증 ID 매핑
-      authIdToUserData[userData.userAuthId] = userData; // 인증 ID와 클라이언트 ID 매핑
-      
-      response.Approved = true; // 연결 승인
+    public NetworkServer(NetworkManager networkManager)
+    {
+        this.networkManager = networkManager;
+        // ���� ���� �ݹ� ���
+        networkManager.ConnectionApprovalCallback += ApprovalCheck;
 
-      //스폰 위치 설정
-      response.Position = SpawnPoint.GetRandomSpawnPos();
-      response.Rotation = Quaternion.identity;
-      
-      response.CreatePlayerObject = true; // 플레이어 오브젝트 생성, 이부분이 빠질경우 정상적으로 게임씬으로 가더라도 플레이어를 확인 못할수도있음
-   }
-   
-   private void OnNetworkReady()
-   {
-      networkManager.OnClientDisconnectCallback += OnClientDisconnect;
-   }
+        networkManager.OnServerStarted += OnNetworkReady;
 
-   private void OnClientDisconnect(ulong clientId)
-   {
-      if (clientToAuth.TryGetValue(clientId, out string authId))
-      {
-         // 연결 종료 시 매핑 정보 삭제
-         clientToAuth.Remove(clientId);
-         authIdToUserData.Remove(authId);
-      }
-   }
 
-   public UserData GetUserDataByClientId(ulong clientId)
-   {
-      if (clientToAuth.TryGetValue(clientId, out string authId))
-      {
-         if (authIdToUserData.TryGetValue(authId, out UserData userData))
-         {
-            return userData;
-         }
-         return null;
-      }
-   
-      return null;
-   }
-   
+    }
+    
+    private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest req, 
+        NetworkManager.ConnectionApprovalResponse res) //
+    {
+       
+        string payload = System.Text.Encoding.UTF8.GetString(req.Payload); // ��û �����͸� ���ڿ��� ��ȯ
+        UserData userData = JsonUtility.FromJson<UserData>(payload); // ��û �����͸� UserData ��ü�� ��ȯ
+        
+        Debug.Log("ApprovalCheck: " + userData.userName);
 
-   public void Dispose()
-   {
-      if (networkManager == null) return;
-      //연결중인 콜백들 제거
-      networkManager.ConnectionApprovalCallback -= ApprovalCheck;
-      networkManager.OnServerStarted -= OnNetworkReady;
-      networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+        clientIdToAuth[req.ClientNetworkId] = userData.userAuthId; // Ŭ���̾�Ʈ ID�� ���� ID ����
+        authIdToUserData[userData.userAuthId] = userData; // ���� ID�� Ŭ���̾�Ʈ ID ����
 
-      // 서버가 연결 중일 때
-      if (networkManager.IsListening)
-      {
-         networkManager.Shutdown();
-      }
-   }
-   
-   // //클라이언트 ID 캐싱
-   // //매핑 정보를 캐시에 저장함
-   // public void CacheClientAuth(ulong clientId)
-   // {
-   //    if (clientToAuth.TryGetValue(clientId, out string authId))
-   //    {
-   //       clientAuthCache[clientId] = authId;
-   //       Debug.Log($"Cached auth mapping: clientId {clientId} -> authId {authId}");
-   //    }
-   // }
-   //
-   // // 캐시에서 매핑 정보를 복원하는 메서드
-   // public void RestoreClientAuth(ulong clientId)
-   // {
-   //    if (clientAuthCache.TryGetValue(clientId, out string authId))
-   //    {
-   //       // 기존 매핑이 없는 경우에만 복원
-   //       if (!clientToAuth.ContainsKey(clientId))
-   //       {
-   //          clientToAuth[clientId] = authId;
-   //          Debug.Log($"Restored auth mapping: clientId {clientId} -> authId {authId}");
-   //       }
-   //    }
-   // }
+
+        res.Approved = true; // ���� ����
+
+        res.Position = SpawnPoint.GetRandomSpawnPos();
+        res.Rotation = Quaternion.identity;
+
+        res.CreatePlayerObject = true; // �÷��̾� ������Ʈ ����
+    }
+
+    private void OnNetworkReady()
+    {
+       networkManager.OnClientDisconnectCallback += OnClientDisconnect;
+
+    }
+
+    private void OnClientDisconnect(ulong clientId)
+    {
+        if (clientIdToAuth.TryGetValue(clientId, out string authId))
+        {
+            // ���� ����� ���� ���� ����
+            clientIdToAuth.Remove(clientId);
+            
+            authIdToUserData.Remove(authId);
+        }
+    }
+
+    public bool OpenConnection(string ip, int port)
+    {
+        UnityTransport transport = networkManager.gameObject.GetComponent<UnityTransport>();
+        transport.SetConnectionData(ip, (ushort)port);
+        return networkManager.StartServer();
+    }
+
+    public void Dispose()
+    {
+       if( networkManager== null) return;
+        // ���� ���� �ݹ� ����
+        networkManager.ConnectionApprovalCallback -= ApprovalCheck; 
+        networkManager.OnServerStarted -= OnNetworkReady;
+        networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+
+        if(networkManager.IsListening)//������ �������϶�
+        {
+            networkManager.Shutdown();
+        }
+    }
+
+    public UserData GetUserDataByClientId(ulong clientId)
+    {
+        
+        if (clientIdToAuth.TryGetValue(clientId, out string authId))
+        {
+            if(authIdToUserData.TryGetValue(authId, out UserData userData))
+            {
+                return userData;
+            }
+
+            return null;
+        }
+
+        return null;
+    }
+
 }

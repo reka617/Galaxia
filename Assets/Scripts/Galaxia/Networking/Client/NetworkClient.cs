@@ -7,36 +7,44 @@ using UnityEngine.SceneManagement;
 
 public class NetworkClient : IDisposable
 {
-   private NetworkManager networkManager;
-   private const string MenuScenename = "GalaxiaStart";
+    private NetworkManager networkManager;
+    private const string MenuScenename = "Start";
+    
+    public NetworkClient(NetworkManager networkManager)
+    {
+        this.networkManager = networkManager;
+        // ¿¬°á ½ÂÀÎ Äİ¹é µî·Ï
+        networkManager.OnClientDisconnectCallback += OnClientDisconnect;
 
-   public NetworkClient(NetworkManager networkManager)
-   {
-      this.networkManager = networkManager;
-      // ì—°ê²° ìŠ¹ì¸ ì½œë°± ë“±ë¡
-      networkManager.OnClientDisconnectCallback += OnClientDisconnect;
-   }
+        
+    }
 
-   private void OnClientDisconnect(ulong clientId)
-   {
-      //ì—°ê²° ì¤‘ì¼ë–„
-      if (clientId != 0 && clientId != networkManager.LocalClientId) return;
-      
-      //ë©”ë‰´ ì”¬ì´ ì•„ë‹ë•Œ
-      if (SceneManager.GetActiveScene().name != MenuScenename)
-      {
-         SceneManager.LoadScene(MenuScenename);
-      }
-      
-      //ì„œë²„ê°€ ì—°ê²°ì„ ëŠì—ˆì„ ë–„
-      if (networkManager.IsConnectedClient)
-      {
-         networkManager.Shutdown();
-      }
-   }
-   
-   public void Dispose()
-   {
-      networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-   }
+
+    private void OnClientDisconnect(ulong clientId)
+    {
+        //¿¬°áÁßÀÏ¶§
+        if(clientId != 0 && clientId != networkManager.LocalClientId)
+        {
+           return;
+        }
+
+        //°ÔÀÌÁßÀÏ¶§ 
+        if (SceneManager.GetActiveScene().name != MenuScenename)
+        {
+            SceneManager.LoadScene(MenuScenename);
+        }
+
+        //¼­¹ö°¡ ¿¬°áÀ» ²÷¾úÀ»¶§    
+        if (networkManager.IsConnectedClient)
+        {
+            networkManager.Shutdown();//¿¬°á Á¾·á
+        }
+
+    }
+
+    public void Dispose()
+    {
+        //¿¬°á ÇØÁ¦ Äİ¹é Á¦°Å
+        networkManager.OnClientDisconnectCallback -= OnClientDisconnect; 
+    }
 }

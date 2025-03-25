@@ -1,24 +1,23 @@
-using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
 public class HostSingleton : MonoBehaviour
 {
     private static HostSingleton instance;
-
-    //public HostGameManager hostGameManager;
-
-    public HostGameManager HostGameManager { get; private set; }
     
+    //private HostGameManager hostGamaManager;
+    public HostGameManager HostGameManager { get; private set; }
+
     public static HostSingleton Instance
     {
         get
         {
-            if (instance != null) return instance;
+            if(instance != null) return instance;
 
             instance = FindObjectOfType<HostSingleton>();
-
-            if (instance == null)
+            if(instance ==null)
             {
                 Debug.LogError("HostSingleton is not found");
                 return null;
@@ -27,13 +26,14 @@ public class HostSingleton : MonoBehaviour
             return instance;
         }
     }
-    void Start()
+    // Start is called before the first frame update
+    private void Start()
     {
         DontDestroyOnLoad(gameObject);
     }
 
-    //Ìò∏Ïä§Ìä∏ ÏÉùÏÑ±
-    public void CreateHost()
+    //≈¨∂Û¿Ãæ∆Æ ª˝º∫
+    public void  CreateHost()
     {
         HostGameManager = new HostGameManager();
     }
@@ -43,3 +43,4 @@ public class HostSingleton : MonoBehaviour
         HostGameManager?.Dispose();
     }
 }
+

@@ -1,4 +1,5 @@
-using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -6,17 +7,17 @@ public class ClientSingleton : MonoBehaviour
 {
     private static ClientSingleton instance;
 
-    public ClientGameManager ClientGameManager { get; private set; }
-
+    //클라이언트 매니저
+    public ClientGamaManager ClientGameManager { get; private set; }
     public static ClientSingleton Instance
     {
         get
         {
-            if (instance != null) return instance;
+            if(instance != null) return instance;
 
             instance = FindObjectOfType<ClientSingleton>();
 
-            if (instance == null)
+            if(instance ==null)
             {
                 Debug.LogError("ClientSingleton is not found");
                 return null;
@@ -25,14 +26,17 @@ public class ClientSingleton : MonoBehaviour
             return instance;
         }
     }
-    void Start()
+    // Start is called before the first frame update
+    private void Start()
     {
         DontDestroyOnLoad(gameObject);
     }
 
+    //클라이언트 생성
     public async Task<bool> CreateClient()
     {
-        ClientGameManager = new ClientGameManager();
+        ClientGameManager = new ClientGamaManager();
+        
         return await ClientGameManager.InitAsync();
     }
 
@@ -41,3 +45,4 @@ public class ClientSingleton : MonoBehaviour
         ClientGameManager?.Dispose();
     }
 }
+

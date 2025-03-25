@@ -1,91 +1,102 @@
-using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
 
-public enum AuthState
-{
-   NotAuthenticated,
-   Authenticating,
-   Authenticated,
-   Failed,
-   Timeout
-}
 public static class AuthenticateWrapper
-{
-   public static AuthState AuthState { get; private set; } = AuthState.NotAuthenticated;
+{   
+    public static AuthState AuthState { get; private set; } = AuthState.NotAuthenticated;
 
-   public static async Task<AuthState> DoAuth(int triedCount = 5)
-   {
-      //ì¸ì¦ì´ ë˜ì–´ìˆìœ¼ë©´ ê¶Œí•œë¶€ì—¬ í•  í•„ìš” ì—†ìŒ
-      if (AuthState == AuthState.Authenticated) return AuthState;
-      
-      if (AuthState == AuthState.Authenticating)
-      {
-         //ì¸ì¦ ì¤‘ì¼ ë–„
-         Debug.LogError("Already being authenticated");
-         await Authenticating();
-         return AuthState;
-      }
-      
-      //AuthenticationServiceëŠ” UGSì™€ í†µì‹ í•˜ê¸° ìœ„í•œ ê²ƒ
-      await SignInAnonymousAsync(triedCount);
-      
-      return AuthState;
-   }
+    public static async Task<AuthState> DoAuth(int triedCount = 5)
+    {
+        if(AuthState == AuthState.Authenticated)
+        {
+            return AuthState;
+        }
+        
+        if(AuthState == AuthState.Authenticating)
+        {
+            //ÀÎÁõ ÁßÀÏ¶§ ´ë±â
+            Debug.LogWarning("ÀÌ¹Ì ÀÎÁõ ÁßÀÔ´Ï´Ù.");
+            await Authenticating();
+            return AuthState;
+        }
 
-   private static async Task<AuthState> Authenticating()
-   {
-      while (AuthState == AuthState.Authenticating || AuthState == AuthState.NotAuthenticated)
-      {
-         await Task.Delay(300);
-      }
+        await SignInAnonymousAsync(triedCount);
 
-      return AuthState;
-   }
+        return AuthState;
+    }
 
-   private static async Task SignInAnonymousAsync(int triedCount)
-   {
-      //DoAuthì˜ ê¸°ëŠ¥ ì´ë™
-      AuthState = AuthState.Authenticating;
-      int count = 0;
+    private static async Task<AuthState> Authenticating()
+    {
+        while(AuthState == AuthState.Authenticating || AuthState== AuthState.NotAuthenticated)
+        {
+            await Task.Delay(200);
+            
+        }
 
-      while (AuthState == AuthState.Authenticating && count < triedCount)
-      {
-         try
-         {
-            //AutenticatiobServiceëŠ” UnityServiceì™€ ì—°ê²°í•˜ê¸° ìœ„í•¨
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        return AuthState;
+    }
 
-            if (AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
+
+    private static async Task SignInAnonymousAsync(int  triedCount)
+    {
+
+        //do auth ±â´ÉÀ¸ ÀÌµ¿
+        AuthState = AuthState.Authenticating;
+        int count = 0;
+
+        while (AuthState == AuthState.Authenticating && count < triedCount)
+        {
+
+            try
             {
-               AuthState = AuthState.Authenticated;
-               
-               break;
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                //await AuthenticationService.Instance.SignInWith
+                if (AuthenticationService.Instance.IsSignedIn && AuthenticationService.Instance.IsAuthorized)
+                {
+                    //Debug.Log("Auth Success");
+                    AuthState = AuthState.Authenticated;
+                    break;
+                }
+            }
+            catch(AuthenticationException e)
+            {
+                Debug.LogError(e);
+                AuthState = AuthState.Failed;
+            }
+            catch(RequestFailedException e)
+            {
+                //unityservices°¡ ÃÊ±âÈ­ µÇÁö ¾ÊÀº °æ¿ì   
+                Debug.LogError(e);
+                AuthState = AuthState.Failed;
             }
 
-         }
-         catch (AuthenticationException e)
-         {
-            Debug.LogError(e);
-            AuthState = AuthState.Failed;
-         }
-         catch (RequestFailedException e)
-         {
-            //UnityServicesê°€ ì´ˆê¸°í™” ë˜ì§€ ì•Šì€ ê²½ìš°
-            Debug.LogError(e);
-            AuthState = AuthState.Failed;
-         }
+            count++;
+            await Task.Delay(1000);
+        }
 
-         count++;
-         await Task.Delay(1000);
-      }
+        //¸ğµç ½Ãµµ°¡ ½ÇÆĞÇÑ °æ¿ì Ã³¸® 
+        if (AuthState != AuthState.Authenticated)
+        {
+            Debug.LogWarning($"ÇÃ·¹ÀÌ¾î ÀÎÁõ ½ÇÆĞ: {count} ¹ø ½Ãµµ.");
+            AuthState = AuthState.Timeout;
+        }
+    }
 
-      if (AuthState != AuthState.Authenticated)
-      {
-         Debug.LogWarning($"Player Authentication failed.. TryCount : {count} ");
-         AuthState = AuthState.Timeout;
-      }
-   }
+
+
 }
+
+public enum AuthState
+{
+    NotAuthenticated,
+    Authenticating,
+    Authenticated,
+    Failed,
+    Timeout
+}
+
+
