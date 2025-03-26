@@ -15,6 +15,8 @@ public class AirPlayer : NetworkBehaviour
     public static event Action<AirPlayer> OnPlayerDespawned; 
     [field: SerializeField] public Health Health { get; private set; }
     [field: SerializeField] public ItemWallet Wallet { get; private set; }
+
+    [SerializeField] private Texture2D crosshair;
     public override void OnNetworkSpawn()
     {
         // if (IsServer)
@@ -66,6 +68,7 @@ public class AirPlayer : NetworkBehaviour
         {
             //우선순위 설정
             cinemachineCamera.Priority = ownerPriority;
+            Cursor.SetCursor(crosshair, new Vector2(crosshair.width/2, crosshair.height/2), CursorMode.Auto);
         }
     }
 

@@ -10,27 +10,44 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Services.Authentication;
 
-public class ClientGamaManager : IDisposable
-{    
+public class ClientGameManager : IDisposable
+{   
+    //í´ë¼ì´ì–¸íŠ¸ëŠ” joinAllocation ê°ì²´ë¥¼ ì‚¬ìš©
     private JoinAllocation joinAllocation;  
 
-    private const string MenuSceneName = "Start";
+    private const string MenuSceneName = "GalaxiaStart";
 
 
-    private NetworkClient networkClient;    
+    private NetworkClient networkClient;
+    private MatchplayMatchmaker matchmaker;
+    private UserData userData;
 
     public async Task<bool> InitAsync()
     {
         
-        //UnityServices.InitializeAsync()¸¦ È£ÃâÇÏ¿© Unity ¼­ºñ½º¸¦ ÃÊ±âÈ­.
+        //í”Œë ˆì´ì–´ ì¸ì¦ì²˜ë¦¬
+        
+        //UnityServices.InitializeAsync()ë¥¼ í˜¸ì¶œ -> UGS ì´ˆê¸°í™”
         await UnityServices.InitializeAsync();
 
         networkClient = new NetworkClient(NetworkManager.Singleton);
-
-
+        matchmaker = new MatchplayMatchmaker();
+        
         AuthState authState = await AuthenticateWrapper.DoAuth();
         if (authState == AuthState.Authenticated)
         {
+            userData = new UserData
+            {
+                userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name"),
+                //AuthenticationService ì¸ìŠ¤í„´ìŠ¤ì˜ PlayerIdë¥¼ ê°€ì ¸ì™€ì„œ ì„¤ì •
+                userAuthId = AuthenticationService.Instance.PlayerId,
+                userGamePreferences = new GameInfo
+                {
+                map = Map.Default,
+                gameMode = GameMode.Default,
+                gameQue = GameQue.Solo
+                }
+            };
             Debug.Log("Auth Success");
             return true;
         }
@@ -57,38 +74,59 @@ public class ClientGamaManager : IDisposable
         {
             Debug.LogError(e);
         }
-
-        //³×Æ®¿öÅ© ¸Å´ÏÀúÀÇ Æ®·£½ºÆ÷Æ®¸¦ °¡Á®¿È  
+        
         UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-
-        //RelayServerData »ı¼º
         //RelayServerData relayServerData = new RelayServerData(joinAllocation, "udp"); 
         RelayServerData relayServerData = new RelayServerData(joinAllocation, "dtls"); //for security
-
-        //Æ®·£½ºÆ÷Æ®¿¡ RelayServerData ¼³Á¤
         transport.SetRelayServerData(relayServerData);
 
-        //************¿¬°á µ¥ÀÌÅÍ ¼³Á¤************
-        UserData userData = new UserData
-        {
-            userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name"),
-
-            //AuthenticationService ÀÎ½ºÅÏ½ºÀÇ PlayerId¸¦ °¡Á®¿Í¼­ ¼³Á¤
-            userAuthId = AuthenticationService.Instance.PlayerId 
-        };
-
+        ConnectClient();
+    }
+    private void ConnectClient()
+    {
         string payload = JsonUtility.ToJson(userData);
-        //byte·Î º¯È¯
         byte[] payloadBytes = System.Text.Encoding.UTF8.GetBytes(payload);
-
-        //³×Æ®¿÷ ¸Å´ÏÁ®ÀÇ Ä¿³Ø¼Ç µ¥ÀÌÅÍ¿¡ ÆäÀÌ·Îµå ¼³Á¤
+        
+        //ë„¤íŠ¸ì›Œí¬ë§¤ë‹ˆì €ì˜ ì»¤ë„¥ì…˜ ë°ì´í„°ì— í˜ì´ë¡œë“œ ì„¤ì •
         NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
-
-        //************¿¬°á µ¥ÀÌÅÍ ¼³Á¤************
-
-        //³×Æ®¿÷ ¸Ş´ÏÁ® È£½ºÆ® ½ÃÀÛ  
+        
+        //ë„¤íŠ¸ì›Œí¬ ë§¤ë‹ˆì € í´ë¼ì´ì–¸íŠ¸ ì‹œì‘
         NetworkManager.Singleton.StartClient();
+    }
+    
+    public async void MatchMakeAsync(Action<MatchmakerPollingResult> onMatchmakeResponse)
+    {
+        if (matchmaker.IsMatchmaking) return;
 
+        MatchmakerPollingResult matchResult = await GetMatchAsync();
+        onMatchmakeResponse?.Invoke(matchResult);
+    }
+
+    public async Task CancelMatchMaking()
+    {
+        await matchmaker.CancelMatchmaking();
+    }
+
+    //ë§¤ì¹­ ê²°ê³¼ë¥¼ ë¦¬í„´
+    private async Task<MatchmakerPollingResult> GetMatchAsync()
+    {
+        MatchmakingResult matchmakingResult = await matchmaker.Matchmake(userData);
+
+        if (matchmakingResult.result == MatchmakerPollingResult.Success)
+        {
+            //ì„œë²„ ì—°ê²°
+            StartClient(matchmakingResult.ip, matchmakingResult.port);
+        }
+
+        return matchmakingResult.result;
+    }
+    
+    public void StartClient(string ip, int port)
+    {
+        UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+        transport.SetConnectionData(ip, (ushort)port);
+        
+        ConnectClient();
     }
 
     public void Dispose()

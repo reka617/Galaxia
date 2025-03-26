@@ -8,12 +8,12 @@ using UnityEngine.SceneManagement;
 public class NetworkClient : IDisposable
 {
     private NetworkManager networkManager;
-    private const string MenuScenename = "Start";
+    private const string MenuScenename = "GalaxiaStart";
     
     public NetworkClient(NetworkManager networkManager)
     {
         this.networkManager = networkManager;
-        // ¿¬°á ½ÂÀÎ ÄÝ¹é µî·Ï
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ý¹ï¿½ ï¿½ï¿½ï¿½
         networkManager.OnClientDisconnectCallback += OnClientDisconnect;
 
         
@@ -22,29 +22,29 @@ public class NetworkClient : IDisposable
 
     private void OnClientDisconnect(ulong clientId)
     {
-        //¿¬°áÁßÀÏ¶§
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½
         if(clientId != 0 && clientId != networkManager.LocalClientId)
         {
            return;
         }
 
-        //°ÔÀÌÁßÀÏ¶§ 
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ 
         if (SceneManager.GetActiveScene().name != MenuScenename)
         {
             SceneManager.LoadScene(MenuScenename);
         }
 
-        //¼­¹ö°¡ ¿¬°áÀ» ²÷¾úÀ»¶§    
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½    
         if (networkManager.IsConnectedClient)
         {
-            networkManager.Shutdown();//¿¬°á Á¾·á
+            networkManager.Shutdown();//ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         }
 
     }
 
     public void Dispose()
     {
-        //¿¬°á ÇØÁ¦ ÄÝ¹é Á¦°Å
+        //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ý¹ï¿½ ï¿½ï¿½ï¿½ï¿½
         networkManager.OnClientDisconnectCallback -= OnClientDisconnect; 
     }
 }

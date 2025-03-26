@@ -17,10 +17,10 @@ using UnityEngine.SceneManagement;
 public class HostGameManager : IDisposable
 {
 
-    private Allocation allocation; //È£½ºÆ® ÇÒ´ç Á¤º¸
+    private Allocation allocation; //È£ï¿½ï¿½Æ® ï¿½Ò´ï¿½ ï¿½ï¿½ï¿½ï¿½
     private string joinCode;
-    private const int maxConnection = 20;//ÃÖ´ë ¿¬°á ¼ö
-    private const string GameSceneName = "Play";
+    private const int maxConnection = 20;//ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
+    private const string GameSceneName = "GalaxiaPlay";
 
     private string lobbyID;
 
@@ -49,23 +49,23 @@ public class HostGameManager : IDisposable
             Debug.LogError(e);
         }
 
-        //³×Æ®¿öÅ© ¸Å´ÏÀúÀÇ Æ®·£½ºÆ÷Æ®¸¦ °¡Á®¿È  
+        //ï¿½ï¿½Æ®ï¿½ï¿½Å© ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  
         UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
 
-        //RelayServerData »ý¼º
+        //RelayServerData ï¿½ï¿½ï¿½ï¿½
         //RelayServerData relayServerData = new RelayServerData(allocation, "udp");
         RelayServerData relayServerData = new RelayServerData(allocation, "dtls"); //for security
 
-        //Æ®·£½ºÆ÷Æ®¿¡ RelayServerData ¼³Á¤
+        //Æ®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ RelayServerData ï¿½ï¿½ï¿½ï¿½
         transport.SetRelayServerData(relayServerData);
 
 
-        //·Îºñ »ý¼º
+        //ï¿½Îºï¿½ ï¿½ï¿½ï¿½ï¿½
         try
         {
-            CreateLobbyOptions options = new CreateLobbyOptions(); //·Îºñ ¿É¼Ç »ý¼º
-            options.IsPrivate = false; //°ø°³ ·Îºñ
-            options.Data = new Dictionary<string, DataObject>() //µ¥ÀÌÅÍ ¼³Á¤
+            CreateLobbyOptions options = new CreateLobbyOptions(); //ï¿½Îºï¿½ ï¿½É¼ï¿½ ï¿½ï¿½ï¿½ï¿½
+            options.IsPrivate = false; //ï¿½ï¿½ï¿½ï¿½ ï¿½Îºï¿½
+            options.Data = new Dictionary<string, DataObject>() //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             {
                 { 
                     "JoinCode", new DataObject(
@@ -78,12 +78,12 @@ public class HostGameManager : IDisposable
 
             string playerName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Unknown");
 
-            // ·Îºñ»ý¼º ½Ã°£ÀÌ ±æ¾îÁú °æ¿ì ´ëºñ 
+            // ï¿½Îºï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ 
             //Lobby lobby = await Lobbies.Instance.CreateLobbyAsync("Game Lobby", maxConnection, options); 
             Lobby lobby = await Lobbies.Instance.CreateLobbyAsync($"{playerName}(Lobby)", maxConnection, options);
 
             lobbyID = lobby.Id;
-            //15ÃÊ ´ë±â·Î ÇÏÆ®ºñÆ® ¸Þ½ÃÁö Àü¼Û    
+            //15ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½Æ® ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½    
             HostSingleton.Instance.StartCoroutine(ReadyLobby(15));
         }
         catch(LobbyServiceException e)
@@ -93,9 +93,9 @@ public class HostGameManager : IDisposable
         }
 
 
-        NetworkServer  = new NetworkServer(NetworkManager.Singleton); //¼­¹ö »ý¼º
+        NetworkServer  = new NetworkServer(NetworkManager.Singleton); //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-        //************¿¬°á µ¥ÀÌÅÍ ¼³Á¤************
+        //************ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½************
         UserData userData = new UserData
         {
             userName = PlayerPrefs.GetString(NamePicker.PlayerNameKey, "Missing name"),
@@ -107,21 +107,21 @@ public class HostGameManager : IDisposable
         string payload = JsonUtility.ToJson(userData);
         byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
 
-        //³×Æ®¿÷ ¸Å´ÏÁ®ÀÇ Ä¿³Ø¼Ç µ¥ÀÌÅÍ¿¡ ÆäÀÌ·Îµå ¼³Á¤
+        //ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½ï¿½ï¿½ Ä¿ï¿½Ø¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½Ì·Îµï¿½ ï¿½ï¿½ï¿½ï¿½
         NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
-        //************¿¬°á µ¥ÀÌÅÍ ¼³Á¤************
+        //************ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½************
 
 
-        //³×Æ®¿÷ ¸Þ´ÏÁ® È£½ºÆ® ½ÃÀÛ  
+        //ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Þ´ï¿½ï¿½ï¿½ È£ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½  
         NetworkManager.Singleton.StartHost();
 
-        //°ÔÀÓ ¾À ·Îµå
+        //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Îµï¿½
         NetworkManager.Singleton.SceneManager.LoadScene(GameSceneName, LoadSceneMode.Single); 
     }
 
     private IEnumerator ReadyLobby(float waitTime)
     {
-        //·Îºñ¿¡ ´ëÇÑ Heartbeat ¸Þ½ÃÁö Àü¼Û
+        //ï¿½Îºï¿½ ï¿½ï¿½ï¿½ï¿½ Heartbeat ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         WaitForSecondsRealtime wait = new WaitForSecondsRealtime(waitTime);
 
         while (true)
@@ -136,22 +136,21 @@ public class HostGameManager : IDisposable
 
     public async void Dispose()
     {
+        if (!string.IsNullOrEmpty(lobbyID)) return;
+
         HostSingleton.Instance.StopCoroutine(nameof(ReadyLobby));
-
-        if(!string.IsNullOrEmpty(lobbyID))
+        
+        try
         {
-            try
-            {
-                await Lobbies.Instance.DeleteLobbyAsync(lobbyID);
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.Log(e);
-            }
-
-            lobbyID = string.Empty;
+            await Lobbies.Instance.DeleteLobbyAsync(lobbyID);
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
         }
 
+        lobbyID = string.Empty;
+        
         NetworkServer?.Dispose();
     }
 }

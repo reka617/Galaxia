@@ -31,10 +31,15 @@ public class GameInfo
 {
     public Map map;
     public GameMode gameMode;
-    public GameQue GameQue;
+    public GameQue gameQue;
 
     internal string ToMultiplayQueue()
     {
-        throw new NotImplementedException();
+        return gameQue switch
+        {
+            GameQue.Solo => "queue-a",
+            GameQue.Team => "queue-a",
+            _=> "queue-a"
+        };
     }
 }
