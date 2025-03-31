@@ -32,35 +32,17 @@ public class AirPlayer : NetworkBehaviour
         
         if (IsServer)
         {
-            // Null 체크 추가
-            if (HostSingleton.Instance != null && 
-                HostSingleton.Instance.HostGameManager != null && 
-                HostSingleton.Instance.HostGameManager.NetworkServer != null)
+            UserData userData = null;
+            if (IsHost)
             {
-                UserData userData =
-                    HostSingleton.Instance.HostGameManager.NetworkServer.GetUserDataByClientId(OwnerClientId);
-            
-                // userData도 null 체크
-                if (userData != null)
-                {
-                    PlayerName.Value = userData.userName;
-                    Debug.Log(PlayerName.Value);
-                }
-                else
-                {
-                    // userData가 null인 경우 대체 이름 사용
-                    PlayerName.Value = $"Player {OwnerClientId}";
-                    Debug.Log($"Using fallback name for player {OwnerClientId}");
-                }
+                userData = HostSingleton.Instance.HostGameManager.NetworkServer.GetUserDataByClientId(OwnerClientId);
             }
             else
             {
-                // 싱글톤 객체가 null인 경우 대체 이름 사용
-                PlayerName.Value = $"Player {OwnerClientId}";
-                Debug.Log($"HostSingleton not available, using fallback name for player {OwnerClientId}");
+                userData = ServerSingleton.Instance.ServerGameManager.NetworkServer.GetUserDataByClientId(OwnerClientId);
             }
-        
-            // 플레이어 스폰 이벤트는 항상 호출
+
+            PlayerName.Value = userData.userName;
             OnPlayerSpawned?.Invoke(this);
         }
 

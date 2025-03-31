@@ -12,7 +12,9 @@ public class ServerGameManager : IDisposable
     private int sPort;
     private int sPort2;
 
-    private NetworkServer networkServer;
+    //private NetworkServer networkServer;
+    
+    public NetworkServer NetworkServer { get; private set; }
     private MultiplayAllocationService multiplayAllocationService;
 
     private const string GameScenename = "GalaxiaPlay";
@@ -23,14 +25,34 @@ public class ServerGameManager : IDisposable
         this.sIP = sIP;
         this.sPort = sPort;
         this.sPort2 = sPort2;
-        networkServer = new NetworkServer(manager);
+        NetworkServer = new NetworkServer(manager);
         multiplayAllocationService = new MultiplayAllocationService();
     }
 
     public async Task StartGameServerAsync()
     {
         await multiplayAllocationService.BeginServerCheck();
-        if (!networkServer.OpenConnection(sIP, sPort))
+
+        try
+        {
+            MatchmakingResults matchmakerPayload = await GetMatchmakerPayload();
+
+            if (matchmakerPayload != null)
+            {
+                await StartBackfill(matchmakerPayload);
+                NetworkServer.OnUserJoined += UserJoined;
+                NetworkServer.OnUserLeft += UserLeft;
+            }
+            else
+            {
+                Debug.LogWarning("Matchmaker payload time out");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning(e);
+        }
+        if (!NetworkServer.OpenConnection(sIP, sPort))
         {
             Debug.LogWarning("Network server did not start");
             return;
@@ -62,10 +84,48 @@ public class ServerGameManager : IDisposable
             await backfiller.BeginBackfilling();
         }
     }
+
+    private void UserJoined(UserData user)
+    {
+        backfiller.AddPlayerToMatch(user);
+        multiplayAllocationService.AddPlayer();
+        if (!backfiller.NeedsPlayers() && backfiller.IsBackfilling)
+        {
+            _ = backfiller.StopBackfill();
+        }
+    }
+
+    private void UserLeft(UserData user)
+    {
+        int playerCount = backfiller.RemovePlayerFromMatch(user.userAuthId);
+        multiplayAllocationService.RemovePlayer();
+        if (playerCount <= 0)
+        {
+            CloseServer();
+            return;
+        }
+
+        if (backfiller.NeedsPlayers() && !backfiller.IsBackfilling)
+        {
+            _ = backfiller.BeginBackfilling();
+        }
+    }
+
+    private async void CloseServer()
+    {
+        await backfiller.StopBackfill();
+        Dispose();
+        Application.Quit();
+    }
     
     public void Dispose()
     {
+        NetworkServer.OnUserJoined -= UserJoined;
+        NetworkServer.OnUserLeft -= UserLeft;
+        
+        backfiller?.Dispose();
+        
         multiplayAllocationService?.Dispose();
-        networkServer?.Dispose();
+        NetworkServer?.Dispose();
     }
 }
